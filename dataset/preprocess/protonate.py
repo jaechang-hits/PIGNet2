@@ -38,13 +38,14 @@ def protonate_mol(
         "pka_precision": pka_precision,
         "max_variants": max_variants,
     }
-    engine = dimorphite_dl.DimorphiteDL(**params)
+    # engine = dimorphite_dl.DimorphiteDL(**params)
 
-    smi = Chem.MolToSmiles(mol)
-    protonated_smi = engine.protonate(smi)[0]
-    protonated_mol = AllChem.AssignBondOrdersFromTemplate(Chem.MolFromSmiles(protonated_smi), mol)
+    # smi = Chem.MolToSmiles(mol)
+    # protonated_smi = engine.protonate(smi)[0]
+    # protonated_mol = AllChem.AssignBondOrdersFromTemplate(Chem.MolFromSmiles(protonated_smi), mol)
 
-    return protonated_mol
+    # return protonated_mol
+    return Chem.Mol(mol)
 
 
 def get_temp_path(path: Optional[Path] = None, **kwargs) -> Path:
@@ -86,38 +87,40 @@ def protonate_pdb(
     resave_by_pymol: bool = True,
     silent: bool = True,
 ) -> Path:
-    stderr = open(os.devnull, "w") if silent else None
+    # stderr = open(os.devnull, "w") if silent else None
 
-    if correct_hetatm:
-        pdb_tmp = get_temp_path(suffix="_HETATM.pdb")
-        _correct_hetatm(pdb_input, pdb_tmp)
-    else:
-        pdb_tmp = get_temp_path(suffix=".pdb")
-        shutil.copy(pdb_input, pdb_tmp)
+    # if correct_hetatm:
+    #     pdb_tmp = get_temp_path(suffix="_HETATM.pdb")
+    #     _correct_hetatm(pdb_input, pdb_tmp)
+    # else:
+    #     pdb_tmp = get_temp_path(suffix=".pdb")
+    #     shutil.copy(pdb_input, pdb_tmp)
 
-    pdb_no_h = get_temp_path(suffix="_noH.pdb")
-    with pdb_no_h.open("w") as f:
-        subprocess.run(
-            [REDUCE_COMMAND, "-Trim", pdb_tmp], stdout=f, text=True, stderr=stderr
-        )
+    # pdb_no_h = get_temp_path(suffix="_noH.pdb")
+    # with pdb_no_h.open("w") as f:
+    #     subprocess.run(
+    #         [REDUCE_COMMAND, "-Trim", pdb_tmp], stdout=f, text=True, stderr=stderr
+    #     )
 
+    # pdb_output = get_temp_path(pdb_output, suffix="_reduce.pdb")
+    # with pdb_output.open("w") as f:
+    #     subprocess.run(
+    #         [REDUCE_COMMAND, "-BUILD", "-NUC", "-NOFLIP", pdb_no_h],
+    #         stdout=f,
+    #         text=True,
+    #         stderr=stderr,
+    #     )
+
+    # if resave_by_pymol:
+    #     _resave_pdb(pdb_output)
+
+    # if silent:
+    #     stderr.close()
+    # pdb_tmp.unlink()
+    # pdb_no_h.unlink()
     pdb_output = get_temp_path(pdb_output, suffix="_reduce.pdb")
     with pdb_output.open("w") as f:
-        subprocess.run(
-            [REDUCE_COMMAND, "-BUILD", "-NUC", "-NOFLIP", pdb_no_h],
-            stdout=f,
-            text=True,
-            stderr=stderr,
-        )
-
-    if resave_by_pymol:
-        _resave_pdb(pdb_output)
-
-    if silent:
-        stderr.close()
-    pdb_tmp.unlink()
-    pdb_no_h.unlink()
-
+        shutil.copy(pdb_input, pdb_output)
     return pdb_output
 
 
