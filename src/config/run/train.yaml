@@ -15,3 +15,5 @@ checkpoint_dir: ckpt
 tensorboard_dir: runs
 log_file: ${hydra:job.name}.log
 restart_file:
+shared_data_dict:
+shared_data_dict_max_num:

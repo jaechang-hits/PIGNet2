@@ -7,6 +7,9 @@ import torch
 from omegaconf import DictConfig
 from torch_geometric import seed_everything
 from torch_geometric.loader import DataLoader
+from torch.multiprocessing import Manager
+
+# from multiprocessing import Manager
 
 from .data import ComplexDataset
 from .utils import read_keys, read_labels, read_metadata
@@ -81,17 +84,32 @@ class ComplexDataModule:
     def setup(self) -> None:
         self.train_datasets = dict()
         self.test_datasets = dict()
+        self.manager = Manager()
+
+        self.shared_data_dict = dict()
 
         for task in self.tasks:
+            self.shared_data_dict[(task, "train")] = None
+            self.shared_data_dict[(task, "test")] = None
+            self.shared_data_dict_max_num = -1
+            if self.config.run.shared_data_dict:
+                self.shared_data_dict[(task, "train")] = self.manager.dict()
+                self.shared_data_dict[(task, "test")] = self.manager.dict()
+            if self.config.run.shared_data_dict_max_num:
+                self.shared_data_dict_max_num = self.config.run.shared_data_dict_max_num
             # Setting 'processed_data_dir' takes priority than 'data_dir'.
             if self.config.data[task].processed_data_dir is not None:
                 train_dataset = ComplexDataset(
                     keys=self.train_keys[task],
                     processed_data_dir=self.config.data[task].processed_data_dir,
+                    shared_data_dict=self.shared_data_dict[(task, "train")],
+                    shared_data_dict_max_num=self.shared_data_dict_max_num,
                 )
                 test_dataset = ComplexDataset(
                     keys=self.test_keys[task],
                     processed_data_dir=self.config.data[task].processed_data_dir,
+                    shared_data_dict=self.shared_data_dict[(task, "test")],
+                    shared_data_dict_max_num=self.shared_data_dict_max_num,
                 )
 
             elif self.config.data[task].data_dir is not None:
@@ -102,12 +120,16 @@ class ComplexDataModule:
                     conv_range=self.conv_range,
                     pos_noise_std=getattr(self.config.data[task], "pos_noise_std", 0.0),
                     pos_noise_max=getattr(self.config.data[task], "pos_noise_max", 0.0),
+                    shared_data_dict=self.shared_data_dict[(task, "train")],
+                    shared_data_dict_max_num=self.shared_data_dict_max_num,
                 )
                 test_dataset = ComplexDataset(
                     keys=self.test_keys[task],
                     data_dir=self.config.data[task].data_dir,
                     id_to_y=self.id_to_y[task],
                     conv_range=self.conv_range,
+                    shared_data_dict=self.shared_data_dict[(task, "test")],
+                    shared_data_dict_max_num=self.shared_data_dict_max_num,
                 )
 
             self.train_datasets[task] = train_dataset

@@ -16,6 +16,10 @@ from tqdm import tqdm
 import path
 import utils
 from data import ComplexDataModule
+import torch.multiprocessing as mp
+
+mp.set_start_method("spawn", force=True)
+torch.multiprocessing.set_sharing_strategy("file_system")
 
 
 def run(
@@ -60,7 +64,7 @@ def main(config: DictConfig):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     # Load the checkpoint if exists.
-    if config.run.restart_file:
+    if config.run.restart_file and os.path.isfile(config.run.restart_file):
         checkpoint = torch.load(config.run.restart_file, map_location=device)
         config = utils.merge_configs(checkpoint["config"], config)
         logger.info(f"Restart from: {os.path.realpath(config.run.restart_file)}")

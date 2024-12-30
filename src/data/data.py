@@ -269,7 +269,7 @@ def complex_to_data(
 
     # Combine the values.
     assert set(ligand.keys()) == set(target.keys())
-    for attr in ligand.keys:
+    for attr in ligand.keys():
         ligand_value = ligand[attr]
         target_value = target[attr]
 
@@ -316,6 +316,9 @@ class ComplexDataset(Dataset):
         processed_data_dir: Optional[str] = None,
         pos_noise_std: float = 0.0,
         pos_noise_max: float = 0.0,
+        shared_data_dict: Dict[int, Data] = None,
+        shared_data_dict_max_num: int = 1000000,
+
     ):
         assert data_dir is not None or processed_data_dir is not None
 
@@ -327,11 +330,16 @@ class ComplexDataset(Dataset):
         self.processed_data_dir = processed_data_dir
         self.pos_noise_std = pos_noise_std
         self.pos_noise_max = pos_noise_max
+        self.shared_data_dict = shared_data_dict
+        self.shared_data_dict_max_num = shared_data_dict_max_num
 
     def len(self) -> int:
         return len(self.keys)
 
     def get(self, idx) -> Data:
+        if self.shared_data_dict is not None and idx in self.shared_data_dict:
+            return self.shared_data_dict[idx]
+
         key = self.keys[idx]
 
         # Setting 'processed_data_dir' takes priority than 'data_dir'.
@@ -339,7 +347,7 @@ class ComplexDataset(Dataset):
             data_path = os.path.join(self.processed_data_dir, key + ".pt")
 
             with open(data_path, "rb") as f:
-                data = torch.load(f)
+                data = torch.load(f, weights_only=False)
 
         elif self.data_dir is not None:
             # pK_d -> kcal/mol
@@ -366,4 +374,11 @@ class ComplexDataset(Dataset):
                 pos_noise_max=self.pos_noise_max,
             )
 
+        
+        if self.shared_data_dict is not None:
+            if len(self.shared_data_dict) < self.shared_data_dict_max_num:
+                try:
+                    self.shared_data_dict[idx] = data
+                except:
+                    pass
         return data
