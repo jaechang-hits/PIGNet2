@@ -21,7 +21,6 @@ def run(protein_id, lines):
         lines = f.readlines()
         lines = [l.split() for l in lines]
         id_to_exp = {l[0]: float(l[1]) for l in lines}
-
     ligand_ids = sorted(id_to_exp.keys())
     pignet_predictions, experiments, pignet_mols, rmsds = [], [], [], []
     for ligand_id in ligand_ids:

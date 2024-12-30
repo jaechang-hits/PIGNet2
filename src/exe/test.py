@@ -9,7 +9,7 @@ import time
 import hydra
 import torch
 from omegaconf import DictConfig, OmegaConf
-from tqdm import tqdm 
+from tqdm import tqdm
 
 # isort: off
 import path
@@ -84,8 +84,8 @@ def main(config: DictConfig):
     run(model, data, device)
 
     test_losses = utils.get_losses(model)
-    test_r, test_r2, test_tau = utils.get_stats(model, task)
     utils.write_predictions(model, config, False)
+    test_r, test_r2, test_tau = utils.get_stats(model, task)
 
     end_time = time.time()
 

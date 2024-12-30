@@ -170,7 +170,6 @@ def get_stats(
     keys = model.predictions[task].keys()
     pred = [sum(model.predictions[task][key]) for key in keys]
     true = [model.labels[task][key] for key in keys]
-
     slop, intercept, r, p_value, std_err = linregress(true, pred)
     r2 = r2_score(true, pred)
 

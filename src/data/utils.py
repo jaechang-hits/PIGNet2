@@ -25,7 +25,8 @@ def _read_lines(path: str) -> List[str]:
         with open(path, "rb") as f:
             out = pickle.load(f)
     # Text file
-    except pickle.UnpicklingError:
+    # except pickle.UnpicklingError:
+    except:
         with open(path) as f:
             out = [line.strip() for line in f]
     return out
