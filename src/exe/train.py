@@ -19,7 +19,7 @@ from data import ComplexDataModule
 import torch.multiprocessing as mp
 
 mp.set_start_method("spawn", force=True)
-torch.multiprocessing.set_sharing_strategy("file_system")
+# torch.multiprocessing.set_sharing_strategy("file_system")
 
 
 def run(
@@ -37,18 +37,24 @@ def run(
         loaders = data.val_dataloader()
 
     tasks = list(loaders.keys())
-    for batch in tqdm(zip(*(loaders[task] for task in tasks))):
+    for idx, batch in enumerate(tqdm(zip(*(loaders[task] for task in tasks)))):
         batch = dict(zip(tasks, batch))
         batch = {task: batch[task].to(device) for task in batch}
 
         if train:
             model.zero_grad()
             loss_total = model.training_step(batch)
+            print(idx, loss_total)
             loss_total.backward()
             optimizer.step()
         else:
             with torch.no_grad():
                 model.validation_step(batch)
+
+        if train and idx > 4000:
+            break
+        elif not train and idx > 200:
+            break
 
 
 @hydra.main(config_path="../config", config_name="config_train")

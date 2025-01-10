@@ -24,7 +24,7 @@ untar() {
 
 mkdir -p PDBbind-v2020 Benchmark
 
-# untar tarfiles/PDBbind-v2020_scoring.tar.xz
+untar tarfiles/PDBbind-v2020_scoring.tar.xz
 # untar tarfiles/PDBbind-v2020_docking.tar.xz
 # untar tarfiles/PDBbind-v2020_cross.tar.xz
 # untar tarfiles/PDBbind-v2020_random.tar.xz
@@ -34,4 +34,4 @@ mkdir -p PDBbind-v2020 Benchmark
 # untar tarfiles/CASF-2016_docking.tar.xz
 # untar tarfiles/CASF-2016_screening.tar.xz
 # untar tarfiles/DUD-E.tar.xz
-untar tarfiles/derivative.tar.xz
+# untar tarfiles/derivative.tar.xz

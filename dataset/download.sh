@@ -11,7 +11,7 @@ download() {
 mkdir -p tarfiles
 
 # Training
-# download PDBbind-v2020_scoring.tar.xz
+download PDBbind-v2020_scoring.tar.xz
 # download PDBbind-v2020_docking.tar.xz
 # download PDBbind-v2020_cross.tar.xz
 # download PDBbind-v2020_random.tar.xz
@@ -22,4 +22,4 @@ mkdir -p tarfiles
 # download CASF-2016_docking.tar.xz
 # download CASF-2016_screening.tar.xz
 # download DUD-E.tar.xz
-download derivative.tar.xz
+# download derivative.tar.xz
