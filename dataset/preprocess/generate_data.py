@@ -317,9 +317,7 @@ def main(args: argparse.Namespace):
                 if args.prefix
                 else f"{args.ligand_file.stem}_{mol_idx}"
             )
-            with open(
-                args.save_file_path / filename, "wb"
-            ) as f:
+            with open(args.save_file_path / filename, "wb") as f:
                 pickle.dump((mol_ligand, mol_target), f)
     else:
         mol_ligand = read_mols(args.ligand_file)[0]

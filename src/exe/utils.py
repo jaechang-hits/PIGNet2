@@ -150,6 +150,7 @@ def get_losses(model: Module) -> Dict[str, float]:
 
     # Combine vdW-radius losses
     losses["dvdw"] = np.mean(list(model.losses["dvdw"].values()))
+    losses["logp"] = np.mean(list(model.losses["logp"].values()))
 
     return losses
 
@@ -208,7 +209,14 @@ def write_predictions(
                     f.write(f"\t{energy:.3f}")
                 f.write("\n")
 
-    if train:
+    if train and config.model._target_ == "models.mdn.MDN":
+        try:
+            with open("learnable_parameters.txt", "w") as f:
+                f.write(f"energy_a: {model.energy_a.item()}\n")
+                f.write(f"energy_b: {model.energy_b.item()}\n")
+        except AttributeError:  # GNN
+            pass
+    elif train:
         try:
             with open("learnable_parameters.txt", "w") as f:
                 f.write(f"hydrophobic_coeff: {model.hydrophobic_coeff.item()}\n")
@@ -264,10 +272,13 @@ def get_log_line(
         values = ["epoch"]
         values += ["train_l_" + task for task in tasks]
         values += ["train_l_dvdw"]
+        values += ["train_l_logp"]
         values += ["test_l_" + task for task in tasks]
         values += ["test_l_dvdw"]
+        values += ["test_l_logp"]
         values += ["train_r", "test_r", "train_tau", "test_tau", "time"]
     else:
         values = [f"{losses[task]:.3f}" for task in tasks]
         values += [f"{losses['dvdw']:.3f}"]
+        values += [f"{losses['logp']:.3f}"]
     return "\t".join(values)

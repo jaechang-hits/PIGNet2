@@ -11,6 +11,7 @@ import torch
 from omegaconf import DictConfig, OmegaConf
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
+import wandb
 
 # isort: off
 import path
@@ -37,6 +38,7 @@ def run(
         loaders = data.val_dataloader()
 
     tasks = list(loaders.keys())
+    total_batch_iteraion = 0
     for idx, batch in enumerate(tqdm(zip(*(loaders[task] for task in tasks)))):
         batch = dict(zip(tasks, batch))
         batch = {task: batch[task].to(device) for task in batch}
@@ -44,21 +46,44 @@ def run(
         if train:
             model.zero_grad()
             loss_total = model.training_step(batch)
-            print(idx, loss_total)
             loss_total.backward()
             optimizer.step()
         else:
             with torch.no_grad():
                 model.validation_step(batch)
 
+        # wandb
+        monitoring_value = dict()
+        train_type = "train" if train else "test"
+        for k1 in model.losses.keys():
+            for k2 in model.losses[k1].keys():
+                monitoring_value[f"{train_type}_{k1}_{k2}"] = model.losses[k1][k2][-1]
+        wandb.log(monitoring_value)
+
         if train and idx > 4000:
             break
         elif not train and idx > 200:
             break
+        total_batch_iteraion += 1
+
+def init_wandb(config):
+    # wandb/run-날짜시간-ID/files/config.yaml 형식으로 저장됨
+    exp_dir = str(config.experiment_name)
+    wandb_dir = "wandb"
+    run_id = None
+    if os.path.exists(f"{wandb_dir}/latest-run"):
+        run_dirs = [d for d in os.listdir(f"{wandb_dir}/latest-run") if d.startswith('run-')]
+        for run_dir in run_dirs:
+            run_id = run_dir.split('-')[-1].split(".")[0]  # run ID는 마지막 부분
+    if run_id:
+        wandb.init(project="pignet_mdn", id=run_id, resume=True)
+    else:
+        wandb.init(project="pignet_mdn", name=exp_dir)
 
 
 @hydra.main(config_path="../config", config_name="config_train")
 def main(config: DictConfig):
+    init_wandb(config)
     logger = utils.initialize_logger(config.run.log_file)
     logger.info(f"Current working directory: {os.getcwd()}")
 
@@ -179,6 +204,8 @@ def main(config: DictConfig):
             if epoch == 1 or epoch % config.run.save_every == 0:
                 save_path = os.path.join(config.run.checkpoint_dir, f"save_{epoch}.pt")
                 utils.save_state(save_path, epoch, model, optimizer)
+
+    wandb.finish()
 
 
 if __name__ == "__main__":

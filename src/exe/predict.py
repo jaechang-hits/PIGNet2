@@ -115,7 +115,9 @@ def main(args: argparse.Namespace):
     ]
 
     # Filter erroneous data.
-    data_list, names = zip(*((datum for data in data_list for datum in data if datum[0] is not None)))
+    data_list, names = zip(
+        *((datum for data in data_list for datum in data if datum[0] is not None))
+    )
     data = pyg_data.Batch.from_data_list(data_list)
 
     # Prediction starts.

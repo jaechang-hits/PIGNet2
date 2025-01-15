@@ -42,7 +42,9 @@ def protonate_mol(
 
     smi = Chem.MolToSmiles(mol)
     protonated_smi = engine.protonate(smi)[0]
-    protonated_mol = AllChem.AssignBondOrdersFromTemplate(Chem.MolFromSmiles(protonated_smi), mol)
+    protonated_mol = AllChem.AssignBondOrdersFromTemplate(
+        Chem.MolFromSmiles(protonated_smi), mol
+    )
 
     return protonated_mol
 
@@ -151,6 +153,3 @@ def _resave_pdb(pdb_input: Path, pdb_output: Optional[Path] = None) -> None:
     cmd.set("connect_mode", 3)
     cmd.load(pdb_input)
     cmd.save(pdb_output)
-
-
-

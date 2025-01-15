@@ -318,7 +318,6 @@ class ComplexDataset(Dataset):
         pos_noise_max: float = 0.0,
         shared_data_dict: Dict[int, Data] = None,
         shared_data_dict_max_num: int = 1000000,
-
     ):
         assert data_dir is not None or processed_data_dir is not None
 
@@ -374,7 +373,6 @@ class ComplexDataset(Dataset):
                 pos_noise_max=self.pos_noise_max,
             )
 
-        
         if self.shared_data_dict is not None:
             if len(self.shared_data_dict) < self.shared_data_dict_max_num:
                 try:

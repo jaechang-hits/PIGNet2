@@ -1,5 +1,6 @@
 """Insert to `sys.path` the absolute path of `..`.
 """
+
 import inspect
 import os
 import sys
