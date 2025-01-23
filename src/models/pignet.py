@@ -231,6 +231,32 @@ class PIGNet(Module):
     ):
         return F.mse_loss(energies.sum(-1, True), true)
 
+    def loss_correlation(
+        self,
+        energies: torch.Tensor,
+        true: torch.Tensor,
+    ):
+        # 평균 계산
+        pred_mean = torch.mean(energies, dim=0)
+        target_mean = torch.mean(true, dim=0)
+
+        # 편차 계산
+        pred_diff = energies - pred_mean
+        target_diff = true - target_mean
+
+        # 공분산 계산
+        covariance = torch.sum(pred_diff * target_diff)
+
+        # 표준편차 계산
+        pred_std = torch.sqrt(torch.sum(pred_diff**2))
+        target_std = torch.sqrt(torch.sum(target_diff**2))
+
+        # Pearson 상관계수 계산
+        correlation = covariance / (pred_std * target_std + 1e-8)
+        loss = 1 - correlation
+
+        return loss
+
     def loss_augment(
         self,
         energies: torch.Tensor,
@@ -259,6 +285,8 @@ class PIGNet(Module):
             loss_dvdw = self.loss_dvdw(dvdw_radii)
             if task_config.objective == "regression":
                 loss_energy = self.loss_regression(energies, sample.y)
+            elif task_config.objective == "correlation":
+                loss_energy = self.loss_correlation(energies, sample.y)
             elif task_config.objective == "augment":
                 loss_energy = self.loss_augment(
                     energies, sample.y, *task_config.loss_range

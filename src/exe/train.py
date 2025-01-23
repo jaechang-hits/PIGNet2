@@ -44,7 +44,6 @@ def run(
         if train:
             model.zero_grad()
             loss_total = model.training_step(batch)
-            print(idx, loss_total)
             loss_total.backward()
             optimizer.step()
         else:
