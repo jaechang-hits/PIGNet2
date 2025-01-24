@@ -229,7 +229,7 @@ class PIGNet(Module):
         energies: torch.Tensor,
         true: torch.Tensor,
     ):
-        return F.mse_loss(energies.sum(-1, True), true)
+        return torch.sqrt(F.mse_loss(energies, true) + 1e-10)
 
     def loss_correlation(
         self,
@@ -237,8 +237,8 @@ class PIGNet(Module):
         true: torch.Tensor,
     ):
         # 평균 계산
-        pred_mean = torch.mean(energies, dim=0)
-        target_mean = torch.mean(true, dim=0)
+        pred_mean = torch.mean(energies)
+        target_mean = torch.mean(true)
 
         # 편차 계산
         pred_diff = energies - pred_mean
@@ -280,28 +280,44 @@ class PIGNet(Module):
 
         for task, sample in batch.items():
             task_config = self.config.data[task]
-
             energies, dvdw_radii = self(sample)
-            loss_dvdw = self.loss_dvdw(dvdw_radii)
-            if task_config.objective == "regression":
-                loss_energy = self.loss_regression(energies, sample.y)
-            elif task_config.objective == "correlation":
-                loss_energy = self.loss_correlation(energies, sample.y)
-            elif task_config.objective == "augment":
-                loss_energy = self.loss_augment(
-                    energies, sample.y, *task_config.loss_range
-                )
+
+            objective = task_config.objective
+            if isinstance(objective, str):
+                if objective == "regression":
+                    loss = self.loss_regression(energies.sum(-1, True), sample.y)
+                elif objective == "correlation":
+                    loss = self.loss_correlation(energies.sum(-1, True), sample.y)
+                elif objective == "augment":
+                    loss = self.loss_augment(
+                        energies, sample.y, *task_config.loss_range
+                    )
+                else:
+                    raise NotImplementedError(
+                        "Current loss functions only support regression and augment."
+                    )
+                loss_total += loss * task_config.loss_ratio
+                self.losses[objective][task].append(loss.item())
+
+            elif isinstance(objective, DictConfig):
+                for key in objective:
+                    if key == "regression":
+                        loss = self.loss_regression(energies.sum(-1, True), sample.y)
+                    elif key == "correlation":
+                        loss = self.loss_correlation(energies.sum(-1, True), sample.y)
+                    elif key == "augment":
+                        loss = self.loss_augment(
+                            energies, sample.y, *task_config.loss_range
+                        )
+                    else:
+                        raise NotImplementedError(
+                            "Current loss functions only support regression and augment."
+                        )
+                    loss_total += loss * objective[key]
+                    self.losses[key][task].append(loss.item())
             else:
-                raise NotImplementedError(
-                    "Current loss functions only support regression and augment."
-                )
-
-            loss_total += loss_energy * task_config.loss_ratio
-            loss_total += loss_dvdw * self.config.run.loss_dvdw_ratio
-
+                raise NotImplementedError("Current object functions is not supported")
             # Update log
-            self.losses["energy"][task].append(loss_energy.item())
-            self.losses["dvdw"][task].append(loss_dvdw.item())
             for key, pred, true in zip(sample.key, energies, sample.y):
                 self.predictions[task][key] = pred.tolist()
                 self.labels[task][key] = true.item()
@@ -362,3 +378,29 @@ class PIGNet(Module):
         self.losses = defaultdict(lambda: defaultdict(list))
         self.predictions = defaultdict(dict)
         self.labels = defaultdict(dict)
+
+    def loss_correlation(
+        self,
+        energies: torch.Tensor,
+        true: torch.Tensor,
+    ):
+        # 평균 계산
+        pred_mean = torch.mean(energies, dim=0)
+        target_mean = torch.mean(true, dim=0)
+
+        # 편차 계산
+        pred_diff = energies - pred_mean
+        target_diff = true - target_mean
+
+        # 공분산 계산
+        covariance = torch.sum(pred_diff * target_diff)
+
+        # 표준편차 계산
+        pred_std = torch.sqrt(torch.sum(pred_diff**2))
+        target_std = torch.sqrt(torch.sum(target_diff**2))
+
+        # Pearson 상관계수 계산
+        correlation = covariance / (pred_std * target_std + 1e-8)
+        loss = 1 - correlation
+
+        return loss

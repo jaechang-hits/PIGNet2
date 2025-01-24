@@ -143,13 +143,11 @@ def get_losses(model: Module) -> Dict[str, float]:
     # model.losses[loss_type][task] -> List[float]
 
     losses = defaultdict(float)
-    tasks_done = model.losses["energy"].keys()
+    losses = dict(model.losses)
 
-    for task in tasks_done:
-        losses[task] += np.mean(model.losses["energy"][task])
-
-    # Combine vdW-radius losses
-    losses["dvdw"] = np.mean(list(model.losses["dvdw"].values()))
+    for key1 in losses:
+        for key2 in losses[key1]:
+            losses[key1][key2] = np.mean(losses[key1][key2])
 
     return losses
 
@@ -250,8 +248,7 @@ def initialize_logger(
 
 
 def get_log_line(
-    tasks: Iterable[str],
-    losses: Dict[str, float] = None,
+    losses=None,
     title: bool = False,
 ) -> str:
     """Get the header line or loss-values line to be printed.
@@ -260,14 +257,16 @@ def get_log_line(
         get_log_line(tasks, title=True) -> header line
         get_log_line(tasks, losses) -> loss-values line
     """
+    values = []
     if title:
-        values = ["epoch"]
-        values += ["train_l_" + task for task in tasks]
-        values += ["train_l_dvdw"]
-        values += ["test_l_" + task for task in tasks]
-        values += ["test_l_dvdw"]
+        values += ["epoch"]
+        for train_or_test in ["train", "test"]:
+            for key1 in sorted(losses.keys()):
+                for key2 in sorted(losses[key1].keys()):
+                    values += [f"{train_or_test}_{key1}_{key2}"]
         values += ["train_r", "test_r", "train_tau", "test_tau", "time"]
     else:
-        values = [f"{losses[task]:.3f}" for task in tasks]
-        values += [f"{losses['dvdw']:.3f}"]
+        for key1 in sorted(losses.keys()):
+            for key2 in sorted(losses[key1].keys()):
+                values += [f"{losses[key1][key2]:.3f}"]
     return "\t".join(values)

@@ -13,6 +13,7 @@ from torch.multiprocessing import Manager
 
 from .data import ComplexDataset
 from .utils import read_keys, read_labels, read_metadata
+from .sampler import PDBBatchSampler
 
 
 class ComplexDataModule:
@@ -163,10 +164,24 @@ class ComplexDataModule:
                 self.train_datasets[task],
                 batch_size=self.batch_size,
                 num_workers=self.num_workers,
-                shuffle=True,
                 pin_memory=self.pin_memory,
                 worker_init_fn=seed_everything if self.seed is not None else None,
                 generator=self.generator if self.seed is not None else None,
+                sampler=(
+                    PDBBatchSampler(
+                        keys=self.train_datasets[task].keys,
+                        batch_size=self.config.run.batch_size,
+                    )
+                    if "pdb_sampler" in self.config.data[task]
+                    and self.config.data[task].pdb_sampler
+                    else None
+                ),
+                shuffle=(
+                    False
+                    if "pdb_sampler" in self.config.data[task]
+                    and self.config.data[task].pdb_sampler
+                    else True
+                ),
             )
             for task in self.tasks
         }
@@ -175,13 +190,24 @@ class ComplexDataModule:
     def val_dataloader(self) -> Dict[str, DataLoader]:
         return {
             task: DataLoader(
-                self.test_datasets[task],
+                self.train_datasets[task],
                 batch_size=self.batch_size,
                 num_workers=self.num_workers,
-                shuffle=True,
                 pin_memory=self.pin_memory,
                 worker_init_fn=seed_everything if self.seed is not None else None,
                 generator=self.generator if self.seed is not None else None,
+                sampler=(
+                    PDBBatchSampler(self.train_datasets[task].keys)
+                    if "pdb_sampler" in self.config.data[task]
+                    and self.config.data[task].pdb_sampler
+                    else None
+                ),
+                shuffle=(
+                    False
+                    if "pdb_sampler" in self.config.data[task]
+                    and self.config.data[task].pdb_sampler
+                    else True
+                ),
             )
             for task in self.tasks
         }
