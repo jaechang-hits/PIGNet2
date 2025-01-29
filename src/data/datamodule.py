@@ -162,8 +162,16 @@ class ComplexDataModule:
         return {
             task: DataLoader(
                 self.train_datasets[task],
-                batch_size=self.batch_size,
-                num_workers=self.num_workers,
+                batch_size=(
+                    self.config.data[task].batch_size
+                    if "batch_size" in self.config.data[task]
+                    else self.batch_size
+                ),
+                num_workers=(
+                    self.config.data[task].num_workers
+                    if "num_workers" in self.config.data[task]
+                    else self.num_workers
+                ),
                 pin_memory=self.pin_memory,
                 worker_init_fn=seed_everything if self.seed is not None else None,
                 generator=self.generator if self.seed is not None else None,
@@ -190,14 +198,21 @@ class ComplexDataModule:
     def val_dataloader(self) -> Dict[str, DataLoader]:
         return {
             task: DataLoader(
-                self.train_datasets[task],
-                batch_size=self.batch_size,
+                self.test_datasets[task],
+                batch_size=(
+                    self.config.data[task].batch_size
+                    if "batch_size" in self.config.data[task]
+                    else self.batch_size
+                ),
                 num_workers=self.num_workers,
                 pin_memory=self.pin_memory,
                 worker_init_fn=seed_everything if self.seed is not None else None,
                 generator=self.generator if self.seed is not None else None,
                 sampler=(
-                    PDBBatchSampler(self.train_datasets[task].keys)
+                    PDBBatchSampler(
+                        self.test_datasets[task].keys,
+                        batch_size=self.config.run.batch_size,
+                    )
                     if "pdb_sampler" in self.config.data[task]
                     and self.config.data[task].pdb_sampler
                     else None

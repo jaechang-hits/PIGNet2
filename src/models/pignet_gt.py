@@ -34,7 +34,7 @@ class PIGNetGT(PIGNet):
                     dropout=0.1,
                     concat=False,
                 )
-                for _ in range(3)
+                for _ in range(config.model.n_gnn)
             ]
         )
 

@@ -59,10 +59,9 @@ def run(
             for k2 in model.losses[k1].keys():
                 monitoring_value[f"{train_type}_{k1}_{k2}"] = model.losses[k1][k2][-1]
         wandb.log(monitoring_value)
-
         if train and idx > 4000:
             break
-        elif not train and idx > 200:
+        elif not train and idx > 1000:
             break
         total_batch_iteraion += 1
 
@@ -191,6 +190,18 @@ def main(config: DictConfig):
             "{:.3f}".format(end_time - start_time),
         ]
         logger.info("\t".join(log_elements))
+
+        # write wandb
+        monitoring_value = dict()
+        for key1 in sorted(train_losses.keys()):
+            for key2 in sorted(train_losses[key1].keys()):
+                monitoring_value[f"epoch_train_{key1}_{key2}"] = train_losses[key1][
+                    key2
+                ]
+        for key1 in sorted(test_losses.keys()):
+            for key2 in sorted(test_losses[key1].keys()):
+                monitoring_value[f"epoch_test_{key1}_{key2}"] = test_losses[key1][key2]
+        wandb.log(monitoring_value)
 
         # Write tensorboard
         # writer.add_scalars("training loss", train_losses, epoch)

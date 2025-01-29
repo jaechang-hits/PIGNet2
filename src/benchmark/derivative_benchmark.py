@@ -7,6 +7,7 @@ from functools import partial
 import numpy as np
 from scipy.stats import kendalltau, linregress
 from sklearn.metrics import r2_score
+import matplotlib.pyplot as plt
 
 HERE = os.path.dirname(os.path.realpath(__file__))
 
@@ -108,6 +109,34 @@ def main(args: argparse.Namespace) -> None:
                     f"{(max(result[protein_id][5])-min(result[protein_id][5])):.1f} kcal/mol",  # energy diff
                     sep="\t",
                 )
+        if args.plot_graph:
+            for idx, protein_id in enumerate(protein_ids):
+                y, x, ligand_ids = _run(protein_id)
+                plt.figure()
+
+                # 추세선 계산
+                z = np.polyfit(x, y, 1)  # 1차 다항식 (선형) 피팅
+                p = np.poly1d(z)
+
+                # 추세선 그리기
+                plt.plot(
+                    x,
+                    p(x),
+                    "r--",
+                    label=f"Trend line (y={z[0]:.2f}x + {z[1]:.2f})",
+                )
+
+                # 그래프 그리기
+                plt.scatter(x, y)
+                plt.title(f"{protein_id}")
+                plt.xlabel("true")
+                plt.ylabel("pred")
+
+                # 그래프 저장
+                plt.savefig(f"{protein_id}.png")
+
+                # figure 닫기 (메모리 관리를 위해)
+                plt.close()
 
 
 if __name__ == "__main__":
@@ -122,6 +151,7 @@ if __name__ == "__main__":
         help=" ",
     )
     parser.add_argument("-v", "--full_result", action="store_true")
+    parser.add_argument("-p", "--plot_graph", action="store_true")
 
     args = parser.parse_args()
 

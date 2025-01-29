@@ -103,7 +103,7 @@ def main(config: DictConfig):
     # Print the loss values.
     log_elements = [
         str(epoch),
-        utils.get_log_line([task], test_losses),
+        utils.get_log_line(test_losses),
         "{:.3f}".format(test_r2),
         "{:.3f}".format(test_r),
         "{:.3f}".format(test_tau),
